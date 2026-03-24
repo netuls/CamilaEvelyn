@@ -5,6 +5,66 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Camila Evelyn</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+  // ── CONFIGURAÇÃO FIREBASE ──
+  const firebaseConfig = {
+    apiKey: "AIzaSyDTmLtAfc1qNNqTi-LAaTeVm5Eb-GywrwY",
+    authDomain: "projeto-hor.firebaseapp.com",
+    projectId: "projeto-hor",
+    storageBucket: "projeto-hor.firebasestorage.app",
+    messagingSenderId: "1021955246820",
+    appId: "1:1021955246820:web:555b3a363c72c7d8b9baf1",
+    measurementId: "G-NW2EH0HHZH"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+  const USER_ID = "camila_evelyn"; // identificador do usuário
+
+  // Expõe para o resto do código
+  window._firebaseDB     = db;
+  window._firebaseDocRef = (path) => doc(db, "usuarios", USER_ID, ...path.split("/"));
+  window._firebaseSetDoc = setDoc;
+  window._firebaseGetDoc = getDoc;
+  window._firebaseOnSnapshot = onSnapshot;
+  window._firebaseReady  = true;
+
+  // Sincroniza dados do localStorage para o Firestore ao iniciar
+  window.addEventListener("firebase-sync-request", async () => {
+    try {
+      const localData = JSON.parse(localStorage.getItem('treino_v3') || '{}');
+      const ref = window._firebaseDocRef("dados/treino_v3");
+      await window._firebaseSetDoc(ref, { payload: JSON.stringify(localData) }, { merge: true });
+    } catch(e) { console.warn("Firebase sync error:", e); }
+  });
+
+  // Carrega dados do Firestore ao iniciar (prevalece sobre localStorage)
+  try {
+    const ref = window._firebaseDocRef("dados/treino_v3");
+    const snap = await window._firebaseGetDoc(ref);
+    if (snap.exists()) {
+      const remoteData = JSON.parse(snap.data().payload || '{}');
+      localStorage.setItem('treino_v3', JSON.stringify(remoteData));
+      console.log("✅ Dados carregados do Firestore");
+    }
+  } catch(e) { console.warn("Firestore load error:", e); }
+
+  // Escuta mudanças em tempo real
+  const ref = window._firebaseDocRef("dados/treino_v3");
+  window._firebaseOnSnapshot(ref, (snap) => {
+    if (snap.exists() && window._firebaseSkipSnapshot !== true) {
+      const remoteData = JSON.parse(snap.data().payload || '{}');
+      localStorage.setItem('treino_v3', JSON.stringify(remoteData));
+      if (typeof renderMain === 'function') renderMain();
+    }
+  });
+
+  window.dispatchEvent(new Event("firebase-ready"));
+</script>
 <style>
   :root {
     --bg:         #fce8f0;
@@ -273,6 +333,57 @@
     font-size:0.8rem; color:var(--muted); font-weight:400;
     margin-bottom:22px; letter-spacing:0.3px;
   }
+
+  /* ── CHECK-IN / CHECK-OUT ── */
+  .checkin-bar {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface2); border: 1.5px solid rgba(214,63,126,0.15);
+    border-radius: 16px; padding: 14px 18px; margin-bottom: 22px;
+    flex-wrap: wrap; position: relative; overflow: hidden;
+  }
+  .checkin-bar::before {
+    content: ''; position: absolute; left:0; top:0; bottom:0; width:4px;
+    background: linear-gradient(180deg,var(--pink),var(--pink-light)); border-radius:0 2px 2px 0;
+  }
+  .checkin-bar.active-session { border-color:rgba(46,204,113,0.35); background:rgba(46,204,113,0.04); }
+  .checkin-bar.active-session::before { background:linear-gradient(180deg,#27ae60,#2ecc71); }
+  .checkin-bar.done-session { border-color:rgba(46,204,113,0.25); background:rgba(46,204,113,0.03); }
+  .checkin-bar.done-session::before { background:linear-gradient(180deg,#27ae60,#2ecc71); }
+
+  .checkin-icon { font-size:1.3rem; flex-shrink:0; }
+  .checkin-info { flex:1; min-width:120px; }
+  .checkin-title {
+    font-size:0.68rem; font-weight:600; letter-spacing:2px; text-transform:uppercase;
+    color:var(--pink-mid); margin-bottom:3px;
+  }
+  .checkin-bar.active-session .checkin-title,
+  .checkin-bar.done-session .checkin-title { color:#27ae60; }
+  .checkin-times {
+    font-family:'Cormorant Garamond',serif; font-size:1.15rem; font-weight:700;
+    color:var(--text); display:flex; align-items:center; gap:8px;
+  }
+  .checkin-sep { color:var(--pink-light); font-weight:300; }
+  .checkin-duration { font-size:0.72rem; color:var(--muted); font-weight:500; margin-top:2px; }
+  .checkin-duration strong { color:var(--pink); }
+
+  .checkin-actions { display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap; }
+
+  .btn-checkin {
+    background:linear-gradient(135deg,var(--pink),var(--pink-mid));
+    color:#fff; border:none; border-radius:12px; padding:10px 18px;
+    font-family:'Jost',sans-serif; font-weight:600; font-size:0.82rem;
+    cursor:pointer; transition:all 0.2s; box-shadow:0 4px 14px rgba(214,63,126,0.3);
+    display:flex; align-items:center; gap:6px; white-space:nowrap;
+  }
+  .btn-checkin:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(214,63,126,0.4); }
+  .btn-checkout { background:linear-gradient(135deg,#27ae60,#2ecc71); box-shadow:0 4px 14px rgba(46,204,113,0.3); }
+  .btn-checkout:hover { box-shadow:0 6px 20px rgba(46,204,113,0.45); }
+  .btn-session-reset {
+    background:none; border:1.5px solid rgba(214,63,126,0.22);
+    color:var(--muted); border-radius:10px; padding:8px 12px;
+    font-size:0.76rem; cursor:pointer; transition:all 0.2s; font-family:'Jost',sans-serif;
+  }
+  .btn-session-reset:hover { border-color:var(--rose); color:var(--rose); }
 
   /* ── ADD FORM ── */
   .add-form { display:flex; gap:8px; margin-bottom:24px; flex-wrap:wrap; }
@@ -1030,6 +1141,120 @@
   ::-webkit-scrollbar { width:4px; height:4px; }
   ::-webkit-scrollbar-track { background:transparent; }
   ::-webkit-scrollbar-thumb { background:rgba(214,63,126,0.25); border-radius:10px; }
+
+  /* ── TREINOS PRÉ-SALVOS ── */
+  .presets-section {
+    margin-bottom: 20px;
+  }
+
+  .presets-label {
+    font-size: 0.68rem; font-weight: 600;
+    letter-spacing: 2.5px; text-transform: uppercase;
+    color: var(--pink-mid); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .presets-label::before {
+    content:''; width:14px; height:1.5px;
+    background:linear-gradient(90deg,var(--pink),var(--pink-light)); border-radius:2px;
+  }
+
+  .presets-chips {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+
+  .preset-chip {
+    background: var(--surface2);
+    border: 1.5px solid var(--border2);
+    border-radius: 100px;
+    padding: 8px 16px;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.82rem; font-weight: 500;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+    user-select: none;
+  }
+
+  .preset-chip:hover {
+    border-color: var(--pink);
+    background: rgba(214,63,126,0.06);
+    color: var(--pink);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(214,63,126,0.15);
+  }
+
+  .preset-chip:active { transform: translateY(0); }
+
+  .preset-chip.added {
+    background: linear-gradient(135deg, var(--pink), var(--pink-mid));
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(214,63,126,0.3);
+  }
+
+  .preset-chip-icon { font-size: 0.9rem; }
+
+  /* ── NOTIFICAÇÃO GEO ── */
+  .geo-banner {
+    display: none;
+    position: fixed;
+    top: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 9999;
+    background: linear-gradient(135deg, var(--pink), var(--pink-mid));
+    color: #fff;
+    border-radius: 20px;
+    padding: 16px 24px;
+    box-shadow: 0 8px 32px rgba(214,63,126,0.45);
+    max-width: 380px; width: calc(100% - 40px);
+    animation: slideDown 0.4s cubic-bezier(.34,1.56,.64,1);
+    cursor: pointer;
+  }
+
+  .geo-banner.visible { display: flex; align-items: center; gap: 14px; }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+
+  .geo-banner-icon { font-size: 1.8rem; flex-shrink: 0; }
+
+  .geo-banner-text { flex: 1; }
+  .geo-banner-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 2px; }
+  .geo-banner-sub   { font-size: 0.76rem; opacity: 0.88; }
+  .geo-banner-close {
+    background: rgba(255,255,255,0.25); border: none; color: #fff;
+    border-radius: 50%; width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 0.8rem; flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .geo-banner-close:hover { background: rgba(255,255,255,0.4); }
+
+  /* ── FIREBASE STATUS ── */
+  .firebase-status {
+    position: fixed; bottom: 16px; right: 16px;
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 100px; padding: 6px 14px;
+    font-size: 0.7rem; color: var(--muted);
+    box-shadow: var(--shadow);
+    z-index: 100;
+    transition: all 0.3s;
+  }
+
+  .fb-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #ccc; flex-shrink: 0;
+    transition: background 0.3s;
+  }
+
+  .fb-dot.connected { background: #27ae60; box-shadow: 0 0 0 3px rgba(46,204,113,0.2); }
+  .fb-dot.syncing   { background: var(--pink); animation: pulse 1s ease infinite; }
+  .fb-dot.error     { background: #e74c3c; }
 </style>
 </head>
 <body>
@@ -1038,6 +1263,21 @@
 <div class="deco deco2">💗</div>
 <div class="deco deco3">✦</div>
 
+<!-- GEO NOTIFICATION BANNER -->
+<div class="geo-banner" id="geo-banner" onclick="geoCheckinNow()">
+  <div class="geo-banner-icon">📍</div>
+  <div class="geo-banner-text">
+    <div class="geo-banner-title">Você chegou na academia! 🏋️</div>
+    <div class="geo-banner-sub">Clique para fazer o check-in agora</div>
+  </div>
+  <button class="geo-banner-close" onclick="dismissGeoBanner(event)">✕</button>
+</div>
+
+<!-- FIREBASE STATUS -->
+<div class="firebase-status" id="firebase-status">
+  <div class="fb-dot" id="fb-dot"></div>
+  <span id="fb-label">Firebase</span>
+</div>
 <!-- REPORT OVERLAY -->
 <div class="overlay" id="overlay" onclick="closeReport(event)">
   <div class="report-panel" id="report-panel">
@@ -1186,8 +1426,17 @@
     <div class="day-name-big" id="active-day-name"></div>
     <div class="day-full-date" id="active-day-date"></div>
 
+    <!-- CHECK-IN / CHECK-OUT -->
+    <div id="checkin-bar"></div>
+
+    <!-- TREINOS PRÉ-SALVOS -->
+    <div class="presets-section">
+      <div class="presets-label">Selecionar treino</div>
+      <div class="presets-chips" id="presets-chips"></div>
+    </div>
+
     <div class="add-form">
-      <input type="text" id="ex-input" placeholder="Ex: Supino reto, Agachamento..." maxlength="80" />
+      <input type="text" id="ex-input" placeholder="Ou escreva manualmente..." maxlength="80" />
       <input type="time" id="ex-time" />
       <button class="btn-add" onclick="addExercise()">+ Adicionar</button>
     </div>
@@ -1218,12 +1467,56 @@
 // ─────────────────────────────────────────
 // Storage: { entries: { "YYYY-MM-DD": [ {id,name,time,done}, ... ] } }
 
+// ── FIREBASE SYNC ──
+async function syncToFirebase() {
+  if (!window._firebaseReady) return;
+  try {
+    setFbStatus('syncing', 'Salvando...');
+    window._firebaseSkipSnapshot = true;
+    const localData = JSON.parse(localStorage.getItem('treino_v3') || '{}');
+    const ref = window._firebaseDocRef("dados/treino_v3");
+    await window._firebaseSetDoc(ref, { payload: JSON.stringify(localData) }, { merge: true });
+    setFbStatus('connected', 'Salvo ✓');
+    setTimeout(() => setFbStatus('connected', 'Firebase ☁️'), 2000);
+  } catch(e) {
+    setFbStatus('error', 'Erro sync');
+    console.warn("Firebase sync error:", e);
+  } finally {
+    setTimeout(() => { window._firebaseSkipSnapshot = false; }, 1500);
+  }
+}
+
+function setFbStatus(state, label) {
+  const dot = document.getElementById('fb-dot');
+  const lbl = document.getElementById('fb-label');
+  if (!dot || !lbl) return;
+  dot.className = 'fb-dot ' + state;
+  lbl.textContent = label;
+}
+
+window.addEventListener('firebase-ready', () => {
+  setFbStatus('connected', 'Firebase ☁️');
+});
+
+// Verifica se Firebase está configurado
+setTimeout(() => {
+  if (!window._firebaseReady) {
+    setFbStatus('error', 'Config Firebase');
+    document.getElementById('firebase-status').title = 'Configure as credenciais do Firebase no código';
+  }
+}, 3000);
+
 function load() {
   try { const r = localStorage.getItem('treino_v3'); return r ? JSON.parse(r) : {entries:{}, confirmed:{}}; }
   catch(e) { return {entries:{}, confirmed:{}}; }
 }
 
-function save(data) { try { localStorage.setItem('treino_v3', JSON.stringify(data)); } catch(e){} }
+function save(data) {
+  try {
+    localStorage.setItem('treino_v3', JSON.stringify(data));
+    syncToFirebase();
+  } catch(e) {}
+}
 
 function dateKey(date) {
   return date.toISOString().slice(0,10); // "YYYY-MM-DD"
@@ -1251,6 +1544,20 @@ function setConfirmed(key, val) {
 }
 
 function allEntries() { return load().entries; }
+
+// ── SESSION HELPERS ──
+function getSession(key) {
+  const d = load();
+  return (d.sessions && d.sessions[key]) || {checkin:null, checkout:null};
+}
+
+function saveSession(key, sess) {
+  const d = load();
+  if (!d.sessions) d.sessions = {};
+  if (!sess.checkin && !sess.checkout) delete d.sessions[key];
+  else d.sessions[key] = sess;
+  save(d);
+}
 
 // ─────────────────────────────────────────
 //  WEEK NAVIGATION (current week)
@@ -1285,6 +1592,93 @@ let customTo   = null;
 function todayWeekIdx() {
   const day = new Date().getDay();
   return day === 0 ? 6 : day - 1;
+}
+
+// ─────────────────────────────────────────
+//  CHECK-IN / CHECK-OUT
+// ─────────────────────────────────────────
+function renderCheckinBar() {
+  const dates = getWeekDates();
+  const key   = dateKey(dates[activeIdx]);
+  const sess  = getSession(key);
+  const bar   = document.getElementById('checkin-bar');
+
+  const fmt = iso => iso ? new Date(iso).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '--:--';
+
+  const dur = () => {
+    if (!sess.checkin || !sess.checkout) return null;
+    const m = Math.round((new Date(sess.checkout)-new Date(sess.checkin))/60000);
+    if (m <= 0) return null;
+    const h = Math.floor(m/60);
+    return h > 0 ? `${h}h ${m%60 > 0 ? m%60+'min' : ''}`.trim() : `${m}min`;
+  };
+
+  const d = dur();
+
+  if (!sess.checkin) {
+    bar.innerHTML = `
+      <div class="checkin-bar">
+        <div class="checkin-icon">🏃‍♀️</div>
+        <div class="checkin-info">
+          <div class="checkin-title">Academia</div>
+          <div class="checkin-times" style="font-size:0.9rem;color:var(--muted);font-family:'Jost',sans-serif;font-weight:400">Você ainda não chegou</div>
+        </div>
+        <div class="checkin-actions">
+          <button class="btn-checkin" onclick="doCheckin('${key}')">📍 Check-in</button>
+        </div>
+      </div>`;
+  } else if (!sess.checkout) {
+    bar.innerHTML = `
+      <div class="checkin-bar active-session">
+        <div class="checkin-icon">💪</div>
+        <div class="checkin-info">
+          <div class="checkin-title">Treino em andamento</div>
+          <div class="checkin-times">Entrou às <strong style="color:var(--pink)">${fmt(sess.checkin)}</strong></div>
+          <div class="checkin-duration">Arrasando! 💗</div>
+        </div>
+        <div class="checkin-actions">
+          <button class="btn-checkin btn-checkout" onclick="doCheckout('${key}')">🏁 Check-out</button>
+          <button class="btn-session-reset" onclick="resetSession('${key}')" title="Apagar">✕</button>
+        </div>
+      </div>`;
+  } else {
+    bar.innerHTML = `
+      <div class="checkin-bar done-session">
+        <div class="checkin-icon">✅</div>
+        <div class="checkin-info">
+          <div class="checkin-title">Sessão concluída</div>
+          <div class="checkin-times">
+            <span>${fmt(sess.checkin)}</span>
+            <span class="checkin-sep">→</span>
+            <span>${fmt(sess.checkout)}</span>
+          </div>
+          ${d ? `<div class="checkin-duration">Duração: <strong>${d}</strong></div>` : ''}
+        </div>
+        <div class="checkin-actions">
+          <button class="btn-session-reset" onclick="resetSession('${key}')">✕ Apagar</button>
+        </div>
+      </div>`;
+  }
+}
+
+function doCheckin(key) {
+  const sess = getSession(key);
+  sess.checkin  = new Date().toISOString();
+  sess.checkout = null;
+  saveSession(key, sess);
+  renderCheckinBar();
+}
+
+function doCheckout(key) {
+  const sess = getSession(key);
+  sess.checkout = new Date().toISOString();
+  saveSession(key, sess);
+  renderCheckinBar();
+}
+
+function resetSession(key) {
+  saveSession(key, {checkin:null, checkout:null});
+  renderCheckinBar();
 }
 
 // ─────────────────────────────────────────
@@ -1495,7 +1889,7 @@ function deleteEx(key, idx) {
 }
 
 function renderMain() {
-  renderTabs(); renderList(); renderOverview(); renderStats(); renderConfirmBar(); renderDupBar();
+  renderTabs(); renderList(); renderOverview(); renderStats(); renderCheckinBar(); renderConfirmBar(); renderDupBar(); renderPresetChips();
 }
 
 // ─────────────────────────────────────────
@@ -1721,20 +2115,20 @@ function showCelebration(key) {
   const d = load();
   const totalConfirmed = Object.keys(d.confirmed || {}).length;
 
+  // session duration
+  const sess = getSession(key);
+  let durStr = '—';
+  if (sess.checkin && sess.checkout) {
+    const m = Math.round((new Date(sess.checkout)-new Date(sess.checkin))/60000);
+    if (m > 0) { const h=Math.floor(m/60); durStr = h>0 ? `${h}h${m%60>0?' '+m%60+'m':''}` : `${m}min`; }
+  }
+
   document.getElementById('cel-day-label').textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
   document.getElementById('cel-stats').innerHTML = `
-    <div class="cel-stat">
-      <div class="cel-stat-num">${exercises.length}</div>
-      <div class="cel-stat-label">Exercícios<br>no treino</div>
-    </div>
-    <div class="cel-stat">
-      <div class="cel-stat-num">${done}</div>
-      <div class="cel-stat-label">Exercícios<br>concluídos</div>
-    </div>
-    <div class="cel-stat">
-      <div class="cel-stat-num">${totalConfirmed}</div>
-      <div class="cel-stat-label">Treinos<br>confirmados</div>
-    </div>
+    <div class="cel-stat"><div class="cel-stat-num">${exercises.length}</div><div class="cel-stat-label">Exercícios<br>no treino</div></div>
+    <div class="cel-stat"><div class="cel-stat-num">${done}</div><div class="cel-stat-label">Exercícios<br>concluídos</div></div>
+    <div class="cel-stat"><div class="cel-stat-num" style="font-size:${durStr.length>5?'1.1rem':'1.8rem'}">${durStr}</div><div class="cel-stat-label">Tempo na<br>academia</div></div>
+    <div class="cel-stat"><div class="cel-stat-num">${totalConfirmed}</div><div class="cel-stat-label">Treinos<br>confirmados</div></div>
   `;
 
   const overlay = document.getElementById('celebration-overlay');
@@ -1966,6 +2360,18 @@ function renderReport() {
       const weekDay = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][d.date.getDay()];
       const done = d.exercises.filter(e=>e.done).length;
       const confirmed = isConfirmed(d.key);
+      const sess = getSession(d.key);
+      let sessStr = '';
+      if (sess.checkin) {
+        const ci = new Date(sess.checkin).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+        const co = sess.checkout ? new Date(sess.checkout).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : null;
+        let dur = '';
+        if (sess.checkout) {
+          const m = Math.round((new Date(sess.checkout)-new Date(sess.checkin))/60000);
+          if (m > 0) { const h=Math.floor(m/60); dur = ` · ${h>0?h+'h ':''}${m%60>0?m%60+'min':''}`; }
+        }
+        sessStr = `<div style="font-size:0.72rem;color:var(--pink-mid);font-weight:500;margin-bottom:5px">⏱️ ${ci}${co?' → '+co:''}${dur}</div>`;
+      }
       const tags = d.exercises.map(e=>
         `<span class="log-ex-tag ${e.done?'done-tag':''}">${esc(e.name)}</span>`
       ).join('');
@@ -1974,6 +2380,7 @@ function renderReport() {
           <div class="log-date">${day}<br><span style="font-size:1rem;color:var(--pink-mid)">${mon}</span><small>${weekDay}</small></div>
           <div style="flex:1">
             ${confirmed ? `<div style="font-size:0.7rem;color:#27ae60;font-weight:600;letter-spacing:1px;margin-bottom:6px;">✅ TREINO CONFIRMADO</div>` : ''}
+            ${sessStr}
             <div class="log-exercises">${tags}</div>
           </div>
           <div class="log-count">${done}/${d.exercises.length}<small>feitos</small></div>
@@ -2041,6 +2448,147 @@ function esc(s) {
 function cap(s) { return s.charAt(0).toUpperCase()+s.slice(1); }
 
 // ─────────────────────────────────────────
+//  TREINOS PRÉ-SALVOS
+// ─────────────────────────────────────────
+const PRESETS = [
+  { name: "Quadríceps", icon: "🦵" },
+  { name: "Panturrilha", icon: "🦶" },
+  { name: "Glúteo",     icon: "🍑" },
+  { name: "Costas",     icon: "🔙" },
+  { name: "Bíceps",     icon: "💪" },
+  { name: "Escada",     icon: "🏃‍♀️" },
+];
+
+function renderPresetChips() {
+  const container = document.getElementById('presets-chips');
+  if (!container) return;
+
+  const dates   = getWeekDates();
+  const key     = dateKey(dates[activeIdx]);
+  const current = getForDate(key).map(e => e.name.toLowerCase());
+
+  container.innerHTML = '';
+  PRESETS.forEach(preset => {
+    const isAdded = current.includes(preset.name.toLowerCase());
+    const chip = document.createElement('button');
+    chip.className = 'preset-chip' + (isAdded ? ' added' : '');
+    chip.innerHTML = `<span class="preset-chip-icon">${preset.icon}</span>${preset.name}${isAdded ? ' ✓' : ''}`;
+    chip.title = isAdded ? 'Já adicionado' : `Adicionar ${preset.name}`;
+    chip.onclick = () => {
+      if (!isAdded) {
+        addPresetExercise(preset.name);
+      }
+    };
+    container.appendChild(chip);
+  });
+}
+
+function addPresetExercise(name) {
+  const key = dateKey(getWeekDates()[activeIdx]);
+  const arr = getForDate(key);
+  // Evita duplicata
+  if (arr.some(e => e.name.toLowerCase() === name.toLowerCase())) return;
+  arr.push({ id: Date.now(), name, time: '', done: false });
+  saveForDate(key, arr);
+  renderMain();
+}
+
+// ─────────────────────────────────────────
+//  GEOLOCALIZAÇÃO — NOTIFICAÇÃO NA ACADEMIA
+// ─────────────────────────────────────────
+const ACADEMIA = {
+  lat: -3.7461,   // R. Maranhão, 343 - Pan-Americano, Fortaleza
+  lng: -38.5434,
+  raioMetros: 200  // raio de detecção em metros
+};
+
+let geoWatchId = null;
+let geoBannerDismissed = false;
+let geoNotifiedToday   = null;
+
+function calcDistancia(lat1, lng1, lat2, lng2) {
+  const R = 6371000; // raio da Terra em metros
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+            Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function iniciarGeoWatch() {
+  if (!("geolocation" in navigator)) return;
+
+  navigator.permissions?.query({ name: 'geolocation' }).then(perm => {
+    if (perm.state === 'denied') return;
+    startWatch();
+  }).catch(() => startWatch());
+
+  function startWatch() {
+    geoWatchId = navigator.geolocation.watchPosition(pos => {
+      const dist = calcDistancia(
+        pos.coords.latitude, pos.coords.longitude,
+        ACADEMIA.lat, ACADEMIA.lng
+      );
+
+      const hoje = dateKey(new Date());
+
+      if (dist <= ACADEMIA.raioMetros) {
+        // Está na academia
+        if (!geoBannerDismissed && geoNotifiedToday !== hoje) {
+          geoNotifiedToday = hoje;
+          mostrarGeoBanner();
+        }
+      } else {
+        // Saiu da academia
+        if (geoNotifiedToday === hoje) {
+          geoBannerDismissed = false; // permite notificar novamente se voltar
+        }
+        ocultarGeoBanner();
+      }
+    }, err => {
+      console.warn("Geo error:", err.message);
+    }, {
+      enableHighAccuracy: true,
+      maximumAge: 30000,
+      timeout: 15000
+    });
+  }
+}
+
+function mostrarGeoBanner() {
+  const banner = document.getElementById('geo-banner');
+  if (banner) banner.classList.add('visible');
+}
+
+function ocultarGeoBanner() {
+  const banner = document.getElementById('geo-banner');
+  if (banner) banner.classList.remove('visible');
+}
+
+function dismissGeoBanner(e) {
+  e.stopPropagation();
+  geoBannerDismissed = true;
+  ocultarGeoBanner();
+}
+
+function geoCheckinNow() {
+  ocultarGeoBanner();
+  geoBannerDismissed = true;
+  // Muda para o dia de hoje e faz check-in
+  weekOffset = 0;
+  activeIdx  = todayWeekIdx();
+  renderMain();
+  const key = dateKey(getWeekDates()[activeIdx]);
+  const sess = getSession(key);
+  if (!sess.checkin) {
+    doCheckin(key);
+  }
+  // Scroll para o topo suavemente
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─────────────────────────────────────────
 //  INIT
 // ─────────────────────────────────────────
 function init() {
@@ -2049,6 +2597,8 @@ function init() {
   updateDateBadge();
   renderMain();
   setTimeout(renderOverview, 120);
+  // Inicia monitoramento de localização
+  iniciarGeoWatch();
 }
 
 init();
