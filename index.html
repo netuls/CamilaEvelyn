@@ -2,7 +2,12 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Camila Evelyn">
+<meta name="theme-color" content="#d63f7e">
 <title>Camila Evelyn</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <!-- Firebase SDK -->
@@ -549,11 +554,20 @@
     position:fixed; inset:0; z-index:100;
     background:rgba(61,26,46,0.45);
     backdrop-filter:blur(6px);
-    display:flex; align-items:flex-start; justify-content:center;
-    padding:24px 16px 40px;
+    display:flex; align-items:flex-end; justify-content:center;
     opacity:0; pointer-events:none;
     transition:opacity 0.3s;
-    overflow-y:auto;
+    overflow:hidden;
+  }
+
+  @media(min-width:769px) {
+    .overlay {
+      align-items: flex-start;
+      padding: 24px 16px 40px;
+      overflow-y: auto;
+    }
+    .report-panel { border-radius: 24px !important; transform: none !important; }
+    .overlay.open .report-panel { transform: none !important; }
   }
 
   .overlay.open { opacity:1; pointer-events:all; }
@@ -561,14 +575,32 @@
   .report-panel {
     background:var(--surface);
     border:1px solid rgba(214,63,126,0.18);
-    border-radius:24px;
+    border-radius:28px 28px 0 0;
     width:100%; max-width:760px;
-    padding:36px;
-    box-shadow:0 20px 60px rgba(214,63,126,0.2);
+    padding:28px 28px max(28px, calc(env(safe-area-inset-bottom) + 20px));
+    box-shadow:0 -8px 48px rgba(214,63,126,0.2);
     position:relative;
-    transform:translateY(30px);
-    transition:transform 0.35s cubic-bezier(.34,1.3,.64,1);
-    margin-top:20px;
+    transform:translateY(100%);
+    transition:transform 0.42s cubic-bezier(.32,1,.6,1);
+    max-height:90dvh;
+    max-height:90vh;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  /* drag handle */
+  .report-panel::after {
+    content:'';
+    display:block;
+    position:sticky;
+    top:-28px;
+    left:50%;
+    transform:translateX(-50%);
+    width:36px; height:4px;
+    background:rgba(214,63,126,0.2);
+    border-radius:100px;
+    margin-bottom:16px;
+    pointer-events:none;
   }
 
   .overlay.open .report-panel { transform:translateY(0); }
@@ -1288,6 +1320,193 @@
   @keyframes blink {
     from { opacity: 0.5; }
     to   { opacity: 1; }
+  }
+
+
+  /* ══════════════════════════════════════
+     MOBILE — iOS & Android
+  ══════════════════════════════════════ */
+
+  /* Safe areas para notch/Dynamic Island iOS */
+  .app {
+    padding-top: max(40px, env(safe-area-inset-top));
+    padding-bottom: max(80px, calc(env(safe-area-inset-bottom) + 60px));
+    padding-left:  max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  /* Impede seleção de texto acidental no mobile */
+  .day-tab, .preset-chip, .btn-add, .btn-checkin,
+  .btn-checkout, .week-arrow, .week-today-btn,
+  .btn-report, .btn-del, .ex-check {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  /* Áreas de toque maiores para mobile */
+  @media (max-width: 768px) {
+    /* Header compacto */
+    header {
+      margin-bottom: 24px;
+      gap: 10px;
+    }
+
+    .logo { font-size: 1.7rem; }
+    .logo-icon { width: 36px; height: 36px; font-size: 1rem; }
+
+    .date-badge {
+      font-size: 0.7rem;
+      padding: 7px 14px;
+    }
+
+    .btn-report {
+      padding: 8px 14px;
+      font-size: 0.74rem;
+    }
+
+    /* Tabs de dias — altura maior para toque fácil */
+    .day-tab {
+      padding: 12px 12px;
+      min-width: 58px;
+      border-radius: 12px;
+    }
+
+    /* Card principal */
+    .card { padding: 20px 16px; }
+
+    /* Check-in bar */
+    .checkin-bar {
+      padding: 12px 14px;
+      gap: 10px;
+    }
+
+    .btn-checkin {
+      padding: 11px 16px;
+      font-size: 0.8rem;
+      min-height: 44px; /* mínimo recomendado Apple HIG */
+    }
+
+    /* Chips de treinos — maiores e com espaço de toque */
+    .preset-chip {
+      padding: 10px 18px;
+      font-size: 0.85rem;
+      min-height: 44px;
+    }
+
+    /* Input e botão de adicionar empilhados */
+    .add-form {
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .add-form input[type="text"] {
+      width: 100%;
+      font-size: 16px; /* evita zoom automático no iOS */
+      padding: 14px 16px;
+      min-height: 48px;
+    }
+
+    .add-form input[type="time"] {
+      width: 100%;
+      font-size: 16px;
+      padding: 14px 16px;
+      min-height: 48px;
+    }
+
+    .btn-add {
+      width: 100%;
+      justify-content: center;
+      padding: 14px;
+      font-size: 0.9rem;
+      min-height: 48px;
+    }
+
+    /* Itens de exercício — área de toque no check */
+    .ex-check {
+      width: 28px; height: 28px;
+      border-radius: 10px;
+    }
+
+    .ex-item { padding: 14px 14px; gap: 12px; }
+    .ex-name { font-size: 0.95rem; white-space: normal; }
+
+    /* Botão deletar sempre visível no mobile */
+    .btn-del {
+      opacity: 1 !important;
+      padding: 8px;
+      font-size: 0.9rem;
+      min-width: 36px; min-height: 36px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Bottom row empilhado */
+    .bottom-row { grid-template-columns: 1fr; gap: 14px; }
+
+    /* Stats grid */
+    .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-card { padding: 14px 12px; }
+    .stat-num  { font-size: 1.6rem; }
+
+    /* Overview */
+    .ov-bar-wrap { height: 48px; }
+
+    /* Relatório */
+    .report-panel {
+      padding: 20px 16px;
+      border-radius: 24px 24px 0 0;
+      max-height: 92dvh;
+    }
+
+    .period-tabs { gap: 5px; }
+    .period-btn  { padding: 7px 12px; font-size: 0.74rem; min-height: 36px; }
+
+    .summary-strip { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .sum-card { padding: 14px 10px; }
+    .sum-num  { font-size: 1.8rem; }
+
+    .day-log-list { max-height: 250px; }
+
+    /* Semana label */
+    .week-arrow { width: 38px; height: 38px; font-size: 1.4rem; }
+
+    /* Geo banner */
+    .geo-banner { top: max(12px, env(safe-area-inset-top)); }
+
+    /* Firebase status menor */
+    .firebase-status {
+      bottom: max(16px, env(safe-area-inset-bottom));
+      right: max(12px, env(safe-area-inset-right));
+      padding: 5px 10px;
+      font-size: 0.65rem;
+    }
+
+    /* Splash melhor no mobile */
+    .splash-name { font-size: 2.2rem; }
+    .splash-photo { width: 140px; height: 140px; }
+    .splash-photo-wrap { width: 140px; height: 140px; }
+  }
+
+  /* Telas muito pequenas (iPhone SE etc) */
+  @media (max-width: 375px) {
+    .day-tab { min-width: 50px; padding: 10px 8px; font-size: 0.75rem; }
+    .logo    { font-size: 1.5rem; }
+    .card    { padding: 16px 14px; }
+    .preset-chip { padding: 9px 14px; font-size: 0.8rem; }
+  }
+
+  /* Landscape no celular */
+  @media (max-width: 768px) and (orientation: landscape) {
+    .app { padding-top: max(16px, env(safe-area-inset-top)); }
+    .splash-photo-wrap { width: 100px; height: 100px; margin-bottom: 16px; }
+    .splash-photo { width: 100px; height: 100px; }
+    .splash-name  { font-size: 1.8rem; }
+  }
+
+  /* Scroll suave no iOS */
+  .tabs-row, .day-log-list, .report-panel {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   /* ── SCROLLBAR ── */
@@ -2778,6 +2997,27 @@ function geoCheckinNow() {
 // ─────────────────────────────────────────
 //  INIT
 // ─────────────────────────────────────────
+// ─────────────────────────────────────────
+//  HAPTIC FEEDBACK (vibração leve no mobile)
+// ─────────────────────────────────────────
+function haptic(type = 'light') {
+  if (!navigator.vibrate) return;
+  const patterns = { light: [10], medium: [20], success: [10, 50, 10], error: [30, 20, 30] };
+  navigator.vibrate(patterns[type] || patterns.light);
+}
+
+// Adiciona haptic nos eventos de toque importantes
+document.addEventListener('DOMContentLoaded', () => {
+  // Chips de treino
+  document.addEventListener('click', e => {
+    if (e.target.closest('.preset-chip:not(.added)')) haptic('light');
+    if (e.target.closest('.ex-check'))   haptic('light');
+    if (e.target.closest('.btn-checkin')) haptic('medium');
+    if (e.target.closest('.btn-checkout')) haptic('success');
+    if (e.target.closest('.day-tab'))    haptic('light');
+  });
+});
+
 function init() {
   weekOffset = 0;
   activeIdx = todayWeekIdx();
