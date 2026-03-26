@@ -71,6 +71,57 @@
   });
 
   window.dispatchEvent(new Event("firebase-ready"));
+</script> 
+  <!-- GEOLOCATION MONITORING AND NOTIFICATIONS -->
+<script>
+  // ── CONFIGURAÇÃO DE LOCALIZAÇÃO E NOTIFICAÇÕES ──
+  const ACADEMY_LOCATION = { lat: -3.756198272665352, lng: -38.56503948107475 };
+  const GEOLOCATION_RADIUS_KM = 0.2; // 200 metros
+
+  // Calcula distância entre dois pontos
+  function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Raio da Terra em km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  // Notificação de chegada na academia (200m)
+  function monitorAcademyLocation() {
+    if (!navigator.geolocation) {
+      alert('❌ Geolocalização não é suportada');
+      return;
+    }
+
+    navigator.geolocation.watchPosition(function(position) {
+      const distance = calculateDistance(
+        position.coords.latitude,
+        position.coords.longitude,
+        ACADEMY_LOCATION.lat,
+        ACADEMY_LOCATION.lng
+      );
+
+      if (distance < GEOLOCATION_RADIUS_KM) {
+        alert('🏋️ Você chegou à academia!');
+      }
+    });
+  }
+
+  // Lembrete de creatina às 21h
+  function creatineReminder() {
+    const now = new Date();
+    if (now.getHours() === 21 && now.getMinutes() === 0) {
+      alert('💊 Hora de tomar sua creatina!');
+    }
+  }
+
+  // Inicializa
+  monitorAcademyLocation();
+  setInterval(creatineReminder, 60000); // Verifica cada minuto
 </script>
 <style>
   :root {
