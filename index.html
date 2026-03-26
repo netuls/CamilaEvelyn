@@ -3057,24 +3057,6 @@ function init() {
     });
   }
 }
-    
-// ANTES: 0.01 graus (≈ 1km)
-// DEPOIS: 0.0018 graus (≈ 200 metros)
-if (distance < 0.0018) {
-    alert('🏋️ Você chegou à academia!');
-} 
-
-    // Verifica a cada minuto
-// Se for 21:00 → Notifica
-if (now.getHours() === 21 && now.getMinutes() === 0) {
-    alert('💊 Hora de tomar sua creatina!'); 
-
-    // Se localização estiver desativada
-// ❌ App bloqueado completamente
-// ✅ Mensagem clara pedindo para ativar
-
-// Desbloqueio automático quando ativar
-} 
 
 init();
 </script>
