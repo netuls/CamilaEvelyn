@@ -518,7 +518,6 @@
     transition:height 0.6s cubic-bezier(.34,1.56,.64,1);
     border-radius:6px 6px 0 0;
   }
-
   .ov-day.active .ov-bar { background:linear-gradient(180deg,var(--pink),rgba(214,63,126,0.3)); }
   .ov-count { font-size:0.62rem; color:var(--muted); font-weight:500; }
 
@@ -1168,9 +1167,28 @@
 
   @keyframes confettiFall {
     0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
-    100% { transform: translateY(500px) rotate(720deg); opacity: 0; }
+    100% { transform: translateY(500px) rotate(720deg); opacity: 0; } 
+    
   }
-
+/* Estilo da Barra de Creatina */
+  .creatine-bar {
+    display: flex; align-items: center; gap: 12px;
+    background: #fff; border: 1.5px solid rgba(214,63,126,0.15);
+    border-radius: 16px; padding: 14px 18px; margin-bottom: 22px;
+    transition: all 0.3s;
+  }
+  .creatine-bar.taken {
+    border-color: #27ae60; background: rgba(46,204,113,0.05);
+  }
+  .creatine-icon { font-size: 1.5rem; }
+  .creatine-info { flex: 1; }
+  .creatine-title { font-weight: 600; font-size: 0.9rem; color: var(--text); }
+  .creatine-status { font-size: 0.75rem; color: var(--muted); }
+  .btn-creatine {
+    background: var(--pink); color: #fff; border: none; padding: 8px 16px;
+    border-radius: 10px; font-weight: 600; cursor: pointer; font-family: 'Jost';
+  }
+  .btn-creatine.done { background: #27ae60; }
 
   /* ── SPLASH SCREEN ── */
 
@@ -1800,7 +1818,8 @@
     <div class="section-label">Exercícios do dia</div>
     <div class="day-name-big" id="active-day-name"></div>
     <div class="day-full-date" id="active-day-date"></div>
-
+<!-- CHECK-IN CREATINA -->
+    <div id="creatine-bar"></div>
     <!-- CHECK-IN / CHECK-OUT -->
     <div id="checkin-bar"></div>
 
@@ -2871,8 +2890,8 @@ function addPresetExercise(name) {
 //  GEOLOCALIZAÇÃO — NOTIFICAÇÃO NA ACADEMIA
 // ─────────────────────────────────────────
 const ACADEMIA = {
-  lat: -3.7562196744533183,
-  lng: -38.56505694350936,
+  lat: -3.756198272665352, 
+  lng: -38.56503948107475,
   raioMetros: 200  // raio de detecção em metros
 };
 
@@ -3028,7 +3047,67 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.closest('.day-tab'))    haptic('light');
   });
 });
+// ── LÓGICA DA CREATINA ──
 
+// Verifica se tomou creatina no dia
+function isCreatineTaken(key) {
+  const d = load();
+  return !!(d.creatine && d.creatine[key]);
+}
+
+// Salva o check-in da creatina
+function toggleCreatine(key) {
+  const d = load();
+  if (!d.creatine) d.creatine = {};
+  
+  if (d.creatine[key]) delete d.creatine[key];
+  else d.creatine[key] = true;
+  
+  save(d);
+  renderMain();
+  haptic('success');
+}
+
+// Renderiza a barra de creatina
+function renderCreatineBar() {
+  const dates = getWeekDates();
+  const key = dateKey(dates[activeIdx]);
+  const taken = isCreatineTaken(key);
+  const container = document.getElementById('creatine-bar');
+  
+  container.innerHTML = `
+    <div class="creatine-bar ${taken ? 'taken' : ''}">
+      <div class="creatine-icon">${taken ? '🥤' : '🥛'}</div>
+      <div class="creatine-info">
+        <div class="creatine-title">Suplementação: Creatina</div>
+        <div class="creatine-status">${taken ? 'Já tomou hoje! ✨' : 'Ainda não tomou'}</div>
+      </div>
+      <button class="btn-creatine ${taken ? 'done' : ''}" onclick="toggleCreatine('${key}')">
+        ${taken ? '✓ Tomado' : 'Check-in'}
+      </button>
+    </div>
+  `;
+}
+
+// Alarme das 21h
+function checkCreatineReminder() {
+  const agora = new Date();
+  // Se for 21h (9 da noite) e não tiver sido notificado na última hora
+  if (agora.getHours() === 21 && agora.getMinutes() === 0) {
+    if (!sessionStorage.getItem('creatine_notified')) {
+      if (confirm("🔔 Cams, hora da Creatina! Já tomou?")) {
+        const hoje = dateKey(new Date());
+        toggleCreatine(hoje);
+      }
+      sessionStorage.setItem('creatine_notified', 'true');
+    }
+  } else {
+    // Reseta para poder notificar no dia seguinte
+    if (agora.getHours() !== 21) {
+      sessionStorage.removeItem('creatine_notified');
+    }
+  }
+}
 function init() {
   weekOffset = 0;
   activeIdx = todayWeekIdx();
