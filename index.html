@@ -1583,40 +1583,10 @@
 
   .fb-dot.connected { background: #27ae60; box-shadow: 0 0 0 3px rgba(46,204,113,0.2); }
   .fb-dot.syncing   { background: var(--pink); animation: pulse 1s ease infinite; }
-  .fb-dot.error     { background: #e74c3c; } 
-  /* --- NOVOS ESTILOS ADICIONADOS --- */
-  #location-lock {
-    position: fixed; inset: 0; z-index: 999999;
-    background: #d63f7e; color: white;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; padding: 30px; font-family: 'Jost', sans-serif;
-  }
-  .creatine-bar {
-    display: flex; align-items: center; gap: 12px;
-    background: #fff; border: 1.5px solid rgba(214,63,126,0.15);
-    border-radius: 16px; padding: 14px 18px; margin-bottom: 22px;
-    transition: all 0.3s;
-  }
-  .creatine-bar.taken { border-color: #27ae60; background: rgba(46,204,113,0.05); }
-  .btn-creatine {
-    background: #d63f7e; color: #fff; border: none; padding: 8px 16px;
-    border-radius: 10px; font-weight: 600; cursor: pointer; font-family: 'Jost';
-  }
-  .btn-creatine.done { background: #27ae60; }
-  /* Esconde o app inicialmente para o bloqueio de localização */
-  .app { display: none; }
+  .fb-dot.error     { background: #e74c3c; }
 </style>
 </head>
-<body> 
-  <!-- BLOQUEIO POR LOCALIZAÇÃO -->
-<div id="location-lock">
-  <div style="font-size: 4rem;">📍</div>
-  <h2 style="font-family: 'Cormorant Garamond', serif; font-size: 2rem;">Acesso Restrito</h2>
-  <p>Cams, ative a localização para liberar sua agenda.</p>
-  <button onclick="requestGeo()" style="background: white; color: #d63f7e; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 700; margin-top: 20px; cursor: pointer;">
-    Liberar Acesso
-  </button>
-</div>
+<body>
 
 
 <!-- SPLASH SCREEN -->
@@ -1826,7 +1796,7 @@
 </div>
 
 <!-- APP -->
-<div class="app" id="main-app-container">
+<div class="app">
   <header>
     <div class="logo">
       <div class="logo-icon">🏋️</div>
@@ -1848,8 +1818,8 @@
     <div class="section-label">Exercícios do dia</div>
     <div class="day-name-big" id="active-day-name"></div>
     <div class="day-full-date" id="active-day-date"></div>
-<!-- CAMPO DA CREATINA -->
-<div id="creatine-bar-container"></div>
+<!-- CHECK-IN CREATINA -->
+    <div id="creatine-bar"></div>
     <!-- CHECK-IN / CHECK-OUT -->
     <div id="checkin-bar"></div>
 
@@ -2312,7 +2282,7 @@ function deleteEx(key, idx) {
 }
 
 function renderMain() {
-  renderTabs(); renderList(); renderOverview(); renderStats(); renderCheckinBar(); renderDupBar(); renderPresetChips(); renderCreatineBar();
+  renderTabs(); renderList(); renderOverview(); renderStats(); renderCheckinBar(); renderDupBar(); renderPresetChips();
 }
 
 // ─────────────────────────────────────────
@@ -3137,72 +3107,6 @@ function checkCreatineReminder() {
       sessionStorage.removeItem('creatine_notified');
     }
   }
-} 
-  // --- NOVAS FUNÇÕES DA CAMS ---
-
-// 1. Pedir Localização
-function requestGeo() {
-  if ("geolocation" in navigator) {
-    navigator.geolocation.getCurrentPosition((pos) => {
-      document.getElementById('location-lock').style.display = 'none';
-      document.getElementById('main-app-container').style.display = 'block'; // Adicione esse ID na sua div 'app'
-      if(!sessionStorage.getItem('notified')) {
-          Notification.requestPermission();
-          sessionStorage.setItem('notified', 'true');
-      }
-    }, () => {
-      alert("Precisamos da localização para liberar o site!");
-    });
-  }
-}
-
-// 2. Lógica da Creatina
-function renderCreatineBar() {
-  const dates = getWeekDates();
-  const key = dateKey(dates[activeIdx]);
-  const d = load();
-  const taken = !!(d.creatine && d.creatine[key]);
-  const container = document.getElementById('creatine-bar-container');
-  if(!container) return;
-
-  container.innerHTML = `
-    <div class="creatine-bar ${taken ? 'taken' : ''}">
-      <div style="font-size:1.5rem">${taken ? '🥤' : '🥛'}</div>
-      <div style="flex:1">
-        <div class="creatine-title">Creatina</div>
-        <div style="font-size:0.75rem; color:#b07090">${taken ? 'Tomada hoje! ✨' : 'Ainda não tomou'}</div>
-      </div>
-      <button class="btn-creatine ${taken ? 'done' : ''}" onclick="toggleCreatine('${key}')">
-        ${taken ? '✓ Ok' : 'Check-in'}
-      </button>
-    </div>`;
-}
-
-function toggleCreatine(key) {
-  const d = load();
-  if (!d.creatine) d.creatine = {};
-  d.creatine[key] = !d.creatine[key];
-  save(d);
-  renderMain();
-}
-
-// 3. Lembrete das 21h
-function startReminder() {
-  setInterval(() => {
-    const agora = new Date();
-    if (agora.getHours() === 21 && agora.getMinutes() === 0) {
-      if (!sessionStorage.getItem('alerta_creatina')) {
-        if (Notification.permission === "granted") {
-          new Notification("🔔 Cams, hora da Creatina!", { body: "Não esqueça de tomar agora!" });
-        } else {
-          alert("🔔 Cams, hora da Creatina!");
-        }
-        sessionStorage.setItem('alerta_creatina', 'true');
-      }
-    } else if (agora.getHours() !== 21) {
-      sessionStorage.removeItem('alerta_creatina');
-    }
-  }, 30000);
 }
 function init() {
   weekOffset = 0;
@@ -3233,9 +3137,7 @@ function init() {
   }
 }
 
-init(); 
-startReminder(); 
-requestGeo();
+init();
 </script>
 </body>
 </html>
