@@ -3,23 +3,8 @@
 // ============================================================
 const STORAGE_KEY = 'meustreino_v1';
 
-const EMOJIS = {
-  musculacao: '💪',
-  cardio:     '🏃',
-  funcional:  '🔥',
-  yoga:       '🧘',
-  natacao:    '🏊',
-  ciclismo:   '🚴',
-};
-
-const NOMES = {
-  musculacao: 'Musculação',
-  cardio:     'Cardio',
-  funcional:  'Funcional',
-  yoga:       'Yoga',
-  natacao:    'Natação',
-  ciclismo:   'Ciclismo',
-};
+const TIPO  = 'musculacao';
+const EMOJI = '💪';
 
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
@@ -59,8 +44,14 @@ function getLastSevenDays() {
 // Actions
 // ============================================================
 function adicionarTreino() {
-  const tipo    = document.getElementById('tipoSelect').value;
-  const nome    = document.getElementById('nomeInput').value.trim();
+  const selecionados = [...document.querySelectorAll('.grupo-btn.selected')]
+    .map(b => b.dataset.grupo);
+
+  if (selecionados.length === 0) {
+    alert('Selecione ao menos um grupo muscular!');
+    return;
+  }
+
   const duracao = parseInt(document.getElementById('duracaoInput').value) || 0;
   const kcal    = parseInt(document.getElementById('kcalInput').value) || 0;
 
@@ -72,8 +63,8 @@ function adicionarTreino() {
   const data = getData();
   data.push({
     id: Date.now(),
-    tipo,
-    nome: nome || NOMES[tipo],
+    tipo: TIPO,
+    nome: selecionados.join(' + '),
     duracao,
     kcal,
     data: todayStr(),
@@ -92,7 +83,7 @@ function deletar(id) {
 }
 
 function limparFormulario() {
-  document.getElementById('nomeInput').value    = '';
+  document.querySelectorAll('.grupo-btn.selected').forEach(b => b.classList.remove('selected'));
   document.getElementById('duracaoInput').value = '';
   document.getElementById('kcalInput').value    = '';
 }
@@ -144,20 +135,18 @@ function renderWorkoutList(hj) {
   }
 
   list.innerHTML = hj.slice().reverse().map(t => {
-    const isCardioTime = t.tipo === 'cardio' || t.tipo === 'natacao';
     return `
-      <div class="workout-item ${t.tipo}">
-        <div class="workout-emoji">${EMOJIS[t.tipo] || '💪'}</div>
+      <div class="workout-item musculacao">
+        <div class="workout-emoji">${EMOJI}</div>
         <div class="workout-info">
           <div class="workout-name">${t.nome}</div>
           <div class="workout-meta">
-            <span class="tag ${t.tipo}">${NOMES[t.tipo] || t.tipo}</span>
             ${t.kcal ? `<span>🔥 ${t.kcal} kcal</span>` : ''}
             <span>⏰ ${t.hora}</span>
           </div>
         </div>
         <div class="workout-right">
-          <div class="workout-time${isCardioTime ? ' cardio-time' : ''}">
+          <div class="workout-time">
             ${t.duracao}<span class="unit">min</span>
           </div>
           <button class="delete-btn" onclick="deletar(${t.id})">✕</button>
@@ -189,6 +178,12 @@ function render() {
   const opts = { weekday: 'short', day: 'numeric', month: 'short' };
   document.getElementById('dateBadge').textContent =
     new Date().toLocaleDateString('pt-BR', opts);
+
+  // Pill toggle
+  document.getElementById('gruposGrid').addEventListener('click', e => {
+    const btn = e.target.closest('.grupo-btn');
+    if (btn) btn.classList.toggle('selected');
+  });
 
   render();
 })();
