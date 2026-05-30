@@ -38,20 +38,20 @@
     <div class="section-title">Registrar treino</div>
 
     <div class="add-form">
-      <div class="form-row">
-        <select id="tipoSelect">
-          <option value="musculacao">💪 Musculação</option>
-          <option value="cardio">🏃 Cardio</option>
-          <option value="funcional">🔥 Funcional</option>
-          <option value="yoga">🧘 Yoga</option>
-          <option value="natacao">🏊 Natação</option>
-          <option value="ciclismo">🚴 Ciclismo</option>
-        </select>
+      <div class="grupos-grid" id="gruposGrid">
+        <button class="grupo-btn" data-grupo="Peito">💪 Peito</button>
+        <button class="grupo-btn" data-grupo="Costas">🏋️ Costas</button>
+        <button class="grupo-btn" data-grupo="Ombros">🔝 Ombros</button>
+        <button class="grupo-btn" data-grupo="Bíceps">💪 Bíceps</button>
+        <button class="grupo-btn" data-grupo="Tríceps">💪 Tríceps</button>
+        <button class="grupo-btn" data-grupo="Abdômen">🔥 Abdômen</button>
+        <button class="grupo-btn" data-grupo="Quadríceps">🦵 Quadríceps</button>
+        <button class="grupo-btn" data-grupo="Posterior">🦵 Posterior</button>
+        <button class="grupo-btn" data-grupo="Glúteos">🍑 Glúteos</button>
+        <button class="grupo-btn" data-grupo="Panturrilha">🦶 Panturrilha</button>
+        <button class="grupo-btn" data-grupo="Cardio">❤️ Cardio</button>
       </div>
-      <div class="form-row">
-        <input type="text" id="nomeInput" placeholder="Ex: Peito e tríceps, HIIT, etc." />
-      </div>
-      <div class="form-row">
+      <div class="form-row" style="margin-top:12px">
         <input type="number" id="duracaoInput" placeholder="Duração (min)" min="1" max="300" />
         <input type="number" id="kcalInput" placeholder="Kcal (opcional)" min="0" max="5000" />
       </div>
