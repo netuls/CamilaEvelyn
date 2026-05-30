@@ -111,17 +111,13 @@ function adicionarTreino() {
 
   if (!selecionados.length) { showToast('Selecione um grupo muscular'); return; }
 
-  const duracao = parseInt(document.getElementById('duracaoInput').value) || 0;
-  const kcal    = parseInt(document.getElementById('kcalInput').value) || 0;
-  if (!duracao)  { showToast('Informe a duracao'); return; }
-
   const pts  = calcPontos();
   const data = getData();
   data.push({
     id: Date.now(),
     player: currentPlayer,
     nome: selecionados.join(' + '),
-    duracao, kcal, pts,
+    pts,
     data: todayStr(),
     hora: new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }),
   });
@@ -140,8 +136,6 @@ function deletar(id) {
 
 function limparFormulario() {
   document.querySelectorAll('.grupo-btn.selected').forEach(b => b.classList.remove('selected'));
-  document.getElementById('duracaoInput').value = '';
-  document.getElementById('kcalInput').value    = '';
 }
 
 // ============================================================
@@ -175,7 +169,6 @@ function renderDuel(all) {
 function renderStats(hj, semana, all) {
   const ptsHoje = hj.reduce((a,t) => a+(t.pts||0), 0);
   document.getElementById('totalHoje').textContent    = hj.length;
-  document.getElementById('totalMinutos').textContent = hj.reduce((a,t) => a+t.duracao, 0);
   document.getElementById('totalSemana').textContent  = all.filter(t => t.player===currentPlayer && semana.includes(t.data)).length;
   document.getElementById('totalPtsHoje').textContent = ptsHoje;
 
@@ -243,12 +236,10 @@ function renderWorkoutList(hj) {
           <div class="workout-name">${t.nome}</div>
           <div class="workout-meta">
             <span>${t.hora}</span>
-            ${t.kcal ? `<span>${t.kcal} kcal</span>` : ''}
           </div>
         </div>
         <div class="workout-right">
-          <div class="workout-dur">${t.duracao}<span class="workout-dur-unit">min</span></div>
-          <div class="workout-pts">+${t.pts||0} pts</div>
+          <div class="workout-pts" style="font-size:14px">+${t.pts||0} pts</div>
           <button class="delete-btn" onclick="deletar(${t.id})">&#x2715;</button>
         </div>
       </div>`).join('') +
