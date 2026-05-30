@@ -10,9 +10,13 @@ const PTS_PER_TREINO = 10;
 let geoWatchId   = null;
 let geoEnabled   = false;
 let geoAlerted   = false;
-let gymLat       = null;
-let gymLng       = null;
 const GYM_RADIUS = 300; // metros
+
+// Academias fixas
+const ACADEMIAS = [
+  { lat: -3.820287004994432,  lng: -38.57783035766868 },
+  { lat: -3.753584270635898,  lng: -38.56869817546132 },
+];
 
 // ============================================================
 // SPLASH
@@ -354,22 +358,8 @@ function toggleGeo() {
     showToast('Geolocalizacao nao disponivel');
     return;
   }
-
-  // Ask user to set the gym location first
-  const r = confirm(
-    'Alerta de academia ativado!\n\n' +
-    'Sua posicao ATUAL sera salva como a localizacao da academia.\n\n' +
-    'Va ate a academia e ative novamente, OU pressione OK para usar sua posicao atual como referencia.'
-  );
-
-  if (!r) return;
-
-  navigator.geolocation.getCurrentPosition(pos => {
-    gymLat = pos.coords.latitude;
-    gymLng = pos.coords.longitude;
-    startGeoWatch();
-    showToast('Academia registrada! Monitorando...');
-  }, () => { showToast('Permissao de localizacao negada'); });
+  startGeoWatch();
+  showToast('Monitorando academias...');
 }
 
 function startGeoWatch() {
@@ -377,33 +367,36 @@ function startGeoWatch() {
   geoAlerted = false;
   document.getElementById('geoBtn').classList.add('active');
   document.getElementById('geoBanner').classList.remove('hidden');
-  document.getElementById('geoBannerText').textContent = 'Monitorando localizacao — Academia registrada';
+  document.getElementById('geoBannerText').textContent = 'Monitorando 2 academias...';
 
   geoWatchId = navigator.geolocation.watchPosition(pos => {
-    if (!gymLat) return;
-    const dist = haversineMeters(pos.coords.latitude, pos.coords.longitude, gymLat, gymLng);
-    const bannerTxt = document.getElementById('geoBannerText');
-    bannerTxt.textContent = 'Academia a ' + Math.round(dist) + 'm de distancia';
+    const { latitude, longitude } = pos.coords;
 
-    if (dist <= GYM_RADIUS && !geoAlerted) {
+    // Calcula distancia para cada academia
+    const dists = ACADEMIAS.map(a => haversineMeters(latitude, longitude, a.lat, a.lng));
+    const minDist = Math.min(...dists);
+    const nearest = dists.indexOf(minDist) + 1;
+
+    document.getElementById('geoBannerText').textContent =
+      `Academia ${nearest} a ${Math.round(minDist)}m de distancia`;
+
+    if (minDist <= GYM_RADIUS && !geoAlerted) {
       geoAlerted = true;
       playAlertSound();
-      showToast('Voce chegou perto da academia! Hora de treinar!');
-      // Browser notification if allowed
+      showToast(`Voce chegou perto da academia ${nearest}! Hora de treinar!`);
       if (Notification.permission === 'granted') {
         new Notification('CasalFit', {
-          body: 'Voce esta perto da academia! Hora de treinar!',
-          icon: ''
+          body: `Voce esta perto da academia ${nearest}! Bora treinar!`,
         });
       } else if (Notification.permission !== 'denied') {
         Notification.requestPermission().then(p => {
           if (p === 'granted') {
-            new Notification('CasalFit', { body: 'Voce esta perto da academia!' });
+            new Notification('CasalFit', { body: `Voce esta perto da academia ${nearest}!` });
           }
         });
       }
     }
-    if (dist > GYM_RADIUS + 50) { geoAlerted = false; }
+    if (minDist > GYM_RADIUS + 50) { geoAlerted = false; }
   }, () => {
     showToast('Erro ao obter localizacao');
   }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 });
@@ -413,7 +406,6 @@ function disableGeo() {
   if (geoWatchId !== null) navigator.geolocation.clearWatch(geoWatchId);
   geoWatchId = null;
   geoEnabled = false;
-  gymLat = gymLng = null;
   document.getElementById('geoBtn').classList.remove('active');
   document.getElementById('geoBanner').classList.add('hidden');
   showToast('Monitoramento desativado');
