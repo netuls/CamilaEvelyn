@@ -207,6 +207,40 @@ select option {
 }
 
 /* ============================================================
+   Grupo selector grid
+   ============================================================ */
+.grupos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.grupo-btn {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 6px;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s, transform .1s;
+  text-align: center;
+}
+
+.grupo-btn:active {
+  transform: scale(.96);
+}
+
+.grupo-btn.selected {
+  background: rgba(230, 57, 70, .18);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ============================================================
    Buttons
    ============================================================ */
 .btn {
@@ -330,11 +364,6 @@ select option {
 }
 
 .workout-item.musculacao::before { background: var(--accent); }
-.workout-item.cardio::before     { background: var(--accent2); }
-.workout-item.yoga::before       { background: #a8dadc; }
-.workout-item.funcional::before  { background: var(--green); }
-.workout-item.natacao::before    { background: #4ecdc4; }
-.workout-item.ciclismo::before   { background: #ffe66d; }
 
 .workout-emoji {
   font-size: 28px;
@@ -386,9 +415,7 @@ select option {
   color: var(--muted);
 }
 
-.workout-time.cardio-time {
-  color: var(--accent2);
-}
+
 
 .delete-btn {
   background: none;
@@ -420,11 +447,7 @@ select option {
   text-transform: uppercase;
 }
 
-.tag.cardio    { background: rgba(244, 162, 97, .15);  color: var(--accent2); }
-.tag.yoga      { background: rgba(168, 218, 220, .15); color: #a8dadc; }
-.tag.funcional { background: rgba(82, 183, 136, .15);  color: var(--green); }
-.tag.natacao   { background: rgba(78, 205, 196, .15);  color: #4ecdc4; }
-.tag.ciclismo  { background: rgba(255, 230, 109, .15); color: #ffe66d; }
+
 
 /* ============================================================
    Empty State
